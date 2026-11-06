@@ -1,3 +1,10 @@
+<a href="https://www.data-jt.de">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Data-JT/.github/main/profile/banner-dark.svg">
+    <img alt="Data JT" src="https://raw.githubusercontent.com/Data-JT/.github/main/profile/banner-light.svg" width="420">
+  </picture>
+</a>
+
 # datajt-proxmox_datacenter_manager
 
 Manage Proxmox Datacenter Manager configuration as Puppet code, through the PDM REST API.
@@ -12,6 +19,7 @@ Manage Proxmox Datacenter Manager configuration as Puppet code, through the PDM 
 6. [Limitations](#limitations)
 7. [Contributing](#contributing)
 8. [License](#license)
+9. [About Data JT](#about-data-jt)
 
 ## Description
 
@@ -64,9 +72,8 @@ which is why the agent runs as root on the node.
 
 ## Requirements
 
-- Puppet or OpenVox 8 or 9 (`>= 8.0.0 < 10.0.0`). Testing is currently done on 8 (CI and
-  production); on 9 the unit tests pass (OpenVox 9.3), but there is no CI job or production
-  use yet. No Forge dependencies; the Resource API ships with Puppet.
+- Puppet or OpenVox 8 or 9 (`>= 8.0.0 < 10.0.0`). Testing is currently done on 8 (CI and production); on 9 the unit tests also run in CI
+  (OpenVox 9.3), but there is no production use yet. No Forge dependencies; the Resource API ships with Puppet.
 - Debian 13 with PDM 1.x. Tested against PDM 1.1.1. PDM 2.x is not supported until declared
   compatible; include the exact PDM version when reporting an issue.
 - The Puppet agent running as root on the PDM node when remote tokens, realm bind passwords or
@@ -200,3 +207,10 @@ for reporting vulnerabilities.
 ## License
 
 Apache-2.0, see [LICENSE](https://github.com/Data-JT/puppet-proxmox_datacenter_manager/blob/master/LICENSE).
+
+## About Data JT
+
+This module is built and maintained by [Data JT](https://www.data-jt.de), an IT and data
+protection consultancy near Freiburg, Germany. All our modules are on the
+[Puppet Forge](https://forge.puppet.com/modules/datajt). For anything beyond issues and pull
+requests, [get in touch](https://www.data-jt.de/kontakt).
