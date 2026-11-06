@@ -43,9 +43,16 @@ Puppet agent compares that description with the live configuration and changes o
 ### How it works
 
 ```text
-Hiera / manifest ──> proxmox_datacenter_manager class ──> pdm_transport.yaml (token, 0600)
-                                                                │
-Puppet agent on the PDM node ──> pdm_* types ──> https://localhost:8443 (PDM REST API)
+Hiera / manifest                   declares the class and the resources
+      │
+      ▼
+proxmox_datacenter_manager class   writes pdm_transport.yaml (token, 0600)
+      │
+      ▼
+pdm_* types                        read that file on every agent run on the PDM node
+      │
+      ▼
+PDM REST API                       https://localhost:8443
 ```
 
 The `proxmox_datacenter_manager` class writes the API token and connection settings to a
