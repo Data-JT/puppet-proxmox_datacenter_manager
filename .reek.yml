@@ -1,0 +1,156 @@
+---
+# Reek configuration. The layout is shared by puppet-proxmox_virtual_environment,
+# puppet-proxmox_backup_server and puppet-proxmox_datacenter_manager.
+#
+# CI runs Reek with a zero-warning baseline, so every exception is explicit,
+# named and commented. Exceptions live only in this file: the code carries no
+# inline :reek: comments.
+#
+# The single `detectors` mapping has two sections. Reek cannot merge two
+# entries for the same detector, so each detector appears in exactly one:
+#
+#   1. Shared base, identical in all three modules: threshold tuning for the
+#      method shapes the Puppet Resource API mandates, and the exceptions those
+#      detectors need in any of the modules.
+#   2. Module-specific: named, per-location exceptions for this module only.
+#
+# A string under `exclude` matches every context whose full name contains it
+# ("Class" or "Class#method"); a string written as "/.../" is a regular
+# expression.
+detectors:
+  # --- 1. Shared base -------------------------------------------------------
+  DataClump:
+    # The Resource API's create/update/delete callbacks share
+    # (context, name[, should]) by contract: exactly three methods. Raising
+    # max_copies from 2 to 3 stops flagging that mandatory CRUD shape while
+    # still catching a clump across four or more methods.
+    max_copies: 3
+    exclude:
+      # Each transport's HTTP verb helpers share (context, path, body, query).
+      - "/\\APuppet::Transport::Proxmox[A-Za-z]+\\z/"
+      # proxmox_virtual_environment only: providers that pass (context, name)
+      # to one helper beyond the CRUD triple, and the SDN providers that thread
+      # (context, should) and (context, vnet) through their path helpers.
+      - "Puppet::Provider::PveBackupJob::ProxmoxVirtualEnvironment"
+      - "Puppet::Provider::PveRole::ProxmoxVirtualEnvironment"
+      - "Puppet::Provider::PveSdnBaseProvider"
+      - "Puppet::Provider::PveSdnSubnet::ProxmoxVirtualEnvironment"
+      - "Puppet::Provider::PveStorage::ProxmoxVirtualEnvironment"
+      - "Puppet::Provider::PveUser::ProxmoxVirtualEnvironment"
+  LongParameterList:
+    # insync?(context, name, attribute_name, is, should) is the Resource API's
+    # mandated callback signature. Raising max_params from 3 to 5 stops
+    # flagging that contract while still catching six or more parameters.
+    max_params: 5
+    exclude:
+      # Each transport's generic call(context, method, path, body:, query:,
+      # path_params:) is the public request boundary; keyword arguments keep
+      # its call sites clear.
+      - "/\\APuppet::Transport::Proxmox[A-Za-z]+#call\\z/"
+
+  # --- 2. Module-specific (proxmox_datacenter_manager) --------------------
+  Attribute:
+    exclude:
+      # SecretStore.config_dir is writable purely as a test seam, so specs can
+      # point the store at a fixture tree instead of a real
+      # /etc/proxmox-datacenter-manager.
+      - "PuppetX::ProxmoxDatacenterManager::SecretStore#config_dir"
+  ControlParameter:
+    exclude:
+      # stored_secret is a dispatch point by contract: the Resource API hands
+      # it the attribute name, and pdm_realm's two secrets genuinely come from
+      # different sources -- the bind password from the node, the OpenID client
+      # key from the API. A lookup table would only move the branch and trip
+      # UtilityFunction on the halves.
+      - "Puppet::Provider::PdmRealm::ProxmoxDatacenterManager#stored_secret"
+  FeatureEnvy:
+    exclude:
+      # These methods translate external hashes or configure external objects.
+      - "Puppet::Provider::PdmAcl::ProxmoxDatacenterManager#acl_body"
+      - "Puppet::Provider::PdmApiToken::ProxmoxDatacenterManager#parse_tokenid"
+      # The helper dispatches a request to the Resource API transport object.
+      - "Puppet::Provider::PdmBaseProvider#request_transport"
+      - "Puppet::Transport::ProxmoxDatacenterManager#handle_response"
+      - "Puppet::Transport::ProxmoxDatacenterManager#http_connection"
+  InstanceVariableAssumption:
+    exclude:
+      # Resource API providers retain transport state between discovery and apply callbacks.
+      - "Puppet::Provider::PdmBaseProvider"
+  ManualDispatch:
+    exclude:
+      # Sensitive values expose unwrap conditionally.
+      - "Puppet::Provider::PdmBaseProvider#unwrap_secret"
+      - "Puppet::Transport::ProxmoxDatacenterManager#initialize"
+  NestedIterators:
+    exclude:
+      # These methods flatten nested collections returned by PDM list endpoints.
+      - "Puppet::Provider::PdmApiToken::ProxmoxDatacenterManager#get"
+      - "Puppet::Provider::PdmRealm::ProxmoxDatacenterManager#get"
+  NilCheck:
+    exclude:
+      # Optional external values require explicit nil handling.
+      - "Puppet::Provider::PdmApiToken::ProxmoxDatacenterManager#parse_tokenid"
+      - "Puppet::Provider::PdmBaseProvider#puppet_to_pdm"
+      - "Puppet::Transport::ProxmoxDatacenterManager#handle_response"
+      # Crypt and SecretStore return nil for "no stored secret", which must stay
+      # distinct from an empty one: collapsing them would report a missing secret
+      # as in sync.
+      - "PuppetX::ProxmoxDatacenterManager::Crypt#self.hash_password"
+      - "PuppetX::ProxmoxDatacenterManager::Crypt#self.verify"
+      - "PuppetX::ProxmoxDatacenterManager::SecretStore#json_entry"
+      - "PuppetX::ProxmoxDatacenterManager::SecretStore#stored_token"
+  RepeatedConditional:
+    exclude:
+      # Realm type selects the PDM endpoint independently in each CRUD callback.
+      - "Puppet::Provider::PdmRealm::ProxmoxDatacenterManager"
+  TooManyInstanceVariables:
+    exclude:
+      # The transport stores the independent connection settings it is given.
+      - "Puppet::Transport::ProxmoxDatacenterManager"
+  TooManyMethods:
+    exclude:
+      # Shared Resource API mapping, transport, and bootstrap behavior belongs in one base provider.
+      - "Puppet::Provider::PdmBaseProvider"
+  TooManyStatements:
+    exclude:
+      # The transport constructor reads the connection settings it is given,
+      # one statement per key. Reek excludes initialize by default, but an
+      # explicit exclude list replaces that default, so it is restated here.
+      - "Puppet::Transport::ProxmoxDatacenterManager#initialize"
+      # Small integration methods are clearer kept as one linear operation.
+      - "Puppet::Provider::PdmAcl::ProxmoxDatacenterManager#get"
+      - "Puppet::Provider::PdmApiToken::ProxmoxDatacenterManager#persist_secret"
+      - "Puppet::Provider::PdmBaseProvider#pdm_to_puppet"
+      - "Puppet::Provider::PdmBaseProvider#puppet_to_pdm"
+      - "Puppet::Provider::PdmRealm::ProxmoxDatacenterManager#map_realm"
+      - "Puppet::Provider::PdmRealm::ProxmoxDatacenterManager#update"
+      - "Puppet::Transport::ProxmoxDatacenterManager#handle_response"
+      - "Puppet::Transport::ProxmoxDatacenterManager#http_connection"
+      - "Puppet::Transport::ProxmoxDatacenterManager#request"
+  UtilityFunction:
+    exclude:
+      # Provider helpers and no-op callbacks belong with their Resource API classes.
+      - "Puppet::Provider::PdmAcl::ProxmoxDatacenterManager#acl_key"
+      - "Puppet::Provider::PdmAcl::ProxmoxDatacenterManager#acl_subject_type"
+      - "Puppet::Provider::PdmApiToken::ProxmoxDatacenterManager#persist_secret"
+      - "Puppet::Provider::PdmBaseProvider#pdm_path"
+      - "Puppet::Provider::PdmBaseProvider#to_bool"
+      # secret_matches? is a template-method hook: the base compares plaintext,
+      # pdm_user overrides it to verify against a crypt(3) hash. unwrap_secret
+      # coerces a declared value that may or may not be Sensitive-wrapped.
+      # Both belong to the provider they serve, not to a separate class.
+      - "Puppet::Provider::PdmBaseProvider#secret_matches?"
+      - "Puppet::Provider::PdmBaseProvider#unwrap_secret"
+      # stored_secret is the per-provider half of that hook: it names which
+      # store entry backs the attribute, which is knowledge about the resource
+      # and belongs on its provider.
+      - "Puppet::Provider::PdmRemote::ProxmoxDatacenterManager#stored_secret"
+      - "Puppet::Provider::PdmUser::ProxmoxDatacenterManager#stored_secret"
+      - "Puppet::Provider::PdmUser::ProxmoxDatacenterManager#secret_matches?"
+      # These small predicates construct Resource API state and keep refresh_changes readable.
+      - "Puppet::Provider::PdmBaseProvider#absent_state"
+      - "Puppet::Provider::PdmBaseProvider#missing_transport_result?"
+      - "Puppet::Provider::PdmBaseProvider#same_resource?"
+      - "Puppet::Provider::PdmNodeConfig::ProxmoxDatacenterManager#delete"
+      - "Puppet::Provider::PdmNotes::ProxmoxDatacenterManager#delete"
+      - "Puppet::Transport::ProxmoxDatacenterManager#expand_path"

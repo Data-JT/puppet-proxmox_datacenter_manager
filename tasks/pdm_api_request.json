@@ -1,0 +1,17 @@
+{
+  "description": "Call any Proxmox Datacenter Manager endpoint below /api2/json.",
+  "input_method": "stdin",
+  "parameters": {
+    "host": { "description": "PDM hostname or IP.", "type": "String[1]" },
+    "port": { "description": "PDM API port.", "type": "Optional[Integer[1, 65535]]" },
+    "token_id": { "description": "PDM API token ID.", "type": "String[1]" },
+    "token_secret": { "description": "PDM API token secret.", "type": "Sensitive[String[1]]" },
+    "method": { "description": "HTTP method.", "type": "Enum['GET', 'POST', 'PUT', 'DELETE']" },
+    "path": { "description": "API path below /api2/json.", "type": "Pattern[/^\\//]" },
+    "path_params": { "description": "Path placeholder values.", "type": "Optional[Hash[String, Any]]" },
+    "query": { "description": "Query string parameters.", "type": "Optional[Hash[String, Any]]" },
+    "body": { "description": "JSON request body.", "type": "Optional[Hash[String, Any]]" },
+    "ssl_verify": { "description": "Verify the PDM TLS certificate.", "type": "Optional[Boolean]" },
+    "ssl_ca_file": { "description": "Optional CA bundle path.", "type": "Optional[String[1]]" }
+  }
+}

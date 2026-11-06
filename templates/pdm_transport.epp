@@ -1,0 +1,18 @@
+<%- |
+  String           $host,
+  Integer          $port,
+  String           $token_id,
+  String           $token_secret,
+  Boolean          $ssl_verify,
+  Optional[String] $ssl_ca_file,
+| -%>
+# Puppet-managed PDM transport configuration.
+---
+host: "<%= $host %>"
+port: <%= $port %>
+token_id: "<%= $token_id %>"
+token_secret: '<%= regsubst($token_secret, "'", "''", 'G') %>'
+ssl_verify: <%= $ssl_verify %>
+<% if $ssl_ca_file { -%>
+ssl_ca_file: "<%= $ssl_ca_file %>"
+<% } -%>

@@ -1,0 +1,8 @@
+---
+os:
+  family: Debian
+  name: Debian
+  release:
+    major: "13"
+networking:
+  fqdn: pdm.example.com
