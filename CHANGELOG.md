@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-06
+
 ### Changed
 
 - The Quality workflow also runs the unit tests on OpenVox 9.
@@ -51,5 +53,6 @@ Initial release.
 - `tools/pdm_hiera_import.rb`, a checkout-only tool that generates Hiera data from an
   existing PDM instance. It is not part of the Forge package.
 
-[Unreleased]: https://github.com/Data-JT/puppet-proxmox_datacenter_manager/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Data-JT/puppet-proxmox_datacenter_manager/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Data-JT/puppet-proxmox_datacenter_manager/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Data-JT/puppet-proxmox_datacenter_manager/releases/tag/v0.1.0
