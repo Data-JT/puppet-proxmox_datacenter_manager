@@ -194,6 +194,9 @@ Every attribute, the class parameters and the `pdm_api_request` task are documen
 - `pdm_node_config` must be titled `localhost` and `pdm_notes` must be titled `global`; PDM has
   exactly one of each, and `ensure => absent` on them is a logged no-op.
 - `pdm_remote` needs `token` at creation, also when `create_token` is used.
+- The `type` of a realm or remote and an `openid` realm's `username_claim` cannot be changed.
+  The run fails before calling PDM, whatever Puppet's `strict` setting; remove and re-create the
+  resource. An attribute that does not belong to the declared `type` is rejected the same way.
 - PDM 2.x is not supported until the module is explicitly declared compatible.
 
 ## Contributing

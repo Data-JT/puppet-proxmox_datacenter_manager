@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `pdm_realm`, `pdm_remote`: a change to an attribute fixed at creation (`type`,
+  `username_claim`) now fails with "<attribute> cannot be changed from X to Y; recreate the
+  resource instead" whatever Puppet's `strict` setting. Before, only the Resource API's own
+  check stopped it, and only under `strict = error`; under `warning` or `off` the provider
+  dropped the attribute and reported the same change on every run.
+- `pdm_realm`: an `openid` realm stored without a `username_claim` now reports `sub`, the
+  claim PDM logs in with then, so declaring `username_claim => 'sub'` on it is no change.
+
+### Changed
+
+- `pdm_realm` rejects an attribute that does not belong to its `type` (for example
+  `user_attr` on an `ad` realm) before anything is sent. Before, PDM refused the request with
+  "schema does not allow additional properties".
+
 ## [0.1.1] - 2026-11-06
 
 ### Changed

@@ -15,6 +15,10 @@ Puppet::ResourceApi.register_type(
     `/etc/proxmox-datacenter-manager/access/ldap-passwords.json` and therefore requires
     the agent to run on the PDM node as root. See the README.
 
+    Declaring an attribute that does not apply to the realm's type fails the
+    run before anything is sent to PDM. `type` and `username_claim` cannot be
+    changed on an existing realm; recreate it instead.
+
     @example Configure an LDAP realm
       pdm_realm { 'corp-ldap':
         ensure        => present,
@@ -34,7 +38,7 @@ Puppet::ResourceApi.register_type(
     type: {
       type: "Enum['ldap', 'ad', 'openid']",
       behaviour: :init_only,
-      desc: 'Realm type. Cannot be changed after creation.',
+      desc: 'Realm type. Cannot be changed after creation; recreate the realm instead.',
     },
     comment: { type: 'Optional[String]', desc: 'Comment.' },
     default: { type: 'Optional[Boolean]', desc: 'Whether this is the default login realm.' },
@@ -66,7 +70,7 @@ Puppet::ResourceApi.register_type(
     username_claim: {
       type: 'Optional[String]',
       behaviour: :init_only,
-      desc: 'OpenID username claim. PDM only accepts it during realm creation.',
+      desc: 'OpenID username claim. A realm without one uses "sub". PDM only accepts it during realm creation; recreate the realm to change it.',
     },
     autocreate: { type: 'Optional[Boolean]', desc: 'Automatically create OpenID users.' },
     scopes: { type: 'Optional[String]', desc: 'OpenID scopes.' },

@@ -9,6 +9,13 @@ module Puppet::Provider::PdmRealm; end
 class Puppet::Provider::PdmRealm::ProxmoxDatacenterManager < Puppet::Provider::PdmBaseProvider
   REALM_TYPES = ['ldap', 'ad', 'openid'].freeze unless const_defined?(:REALM_TYPES)
 
+  # PDM's login code reads `username-claim` with a fallback of "sub"
+  # (server/src/api/access/openid.rs), so a realm stored without one behaves
+  # exactly like one stored with "sub". get reports it that way, or declaring
+  # the default on such a realm would read as a change to a create-only
+  # attribute.
+  DEFAULT_USERNAME_CLAIM = 'sub' unless const_defined?(:DEFAULT_USERNAME_CLAIM)
+
   def self.attribute_map
     {
       'realm' => :realm, 'comment' => :comment, 'default' => :default,
@@ -26,6 +33,19 @@ class Puppet::Provider::PdmRealm::ProxmoxDatacenterManager < Puppet::Provider::P
 
   def self.boolean_attributes
     [:default, :verify, :autocreate]
+  end
+
+  # Read from the create and update schemas of each realm endpoint in the PDM
+  # API viewer.
+  def self.attributes_by_type
+    {
+      'ldap'   => [:base_dn, :bind_dn, :bind_password, :capath, :default, :filter, :mode, :port, :server1, :server2,
+                   :sync_attributes, :sync_defaults_options, :user_attr, :user_classes, :verify],
+      'ad'     => [:base_dn, :bind_dn, :bind_password, :capath, :default, :filter, :mode, :port, :server1, :server2,
+                   :sync_attributes, :sync_defaults_options, :user_classes, :verify],
+      'openid' => [:acr_values, :audiences, :autocreate, :client_id, :client_key, :default, :issuer_url, :prompt,
+                   :scopes, :username_claim],
+    }
   end
 
   def self.secret_attributes
@@ -61,7 +81,7 @@ class Puppet::Provider::PdmRealm::ProxmoxDatacenterManager < Puppet::Provider::P
     raise Puppet::ResourceError, "Unable to determine type for realm #{name}" unless realm_type
 
     context.notice("Updating PDM #{realm_type} realm '#{name}'")
-    body = should.reject { |key, _| key == :username_claim }
+    body = without_create_only(context, should)
     pdm_transport(context).put(context, realm_path(realm_type, name), update_request_body(context, body))
   end
 
@@ -90,6 +110,7 @@ class Puppet::Provider::PdmRealm::ProxmoxDatacenterManager < Puppet::Provider::P
     type_by_realm[name] = realm_type
     client_key_by_realm[name] = realm['client-key']
     result = pdm_to_puppet(realm).reject { |key, _| [:bind_password, :client_key].include?(key) }
+    result[:username_claim] ||= DEFAULT_USERNAME_CLAIM if realm_type == 'openid'
     result.merge(ensure: 'present', type: realm_type).merge(secret_placeholders(name))
   end
 

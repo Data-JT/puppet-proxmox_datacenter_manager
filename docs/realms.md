@@ -7,6 +7,11 @@ The `type` attribute selects the backend and routes to the corresponding PDM API
 (`/config/access/{ldap,ad,openid}`). The API has no way to move a realm between endpoints, so to
 switch types set `ensure => absent` for one run and re-create the realm with the new type.
 
+`username_claim` is fixed at creation as well, since the realm's users are keyed by it. A realm
+stored without one reports `sub`, the claim PDM then logs in with, so declaring `sub` on it is
+no change. Attributes that do not belong to the realm's `type` (for example `user_attr` on an
+`ad` realm) fail the run before anything is sent to PDM.
+
 ## LDAP
 
 ```puppet

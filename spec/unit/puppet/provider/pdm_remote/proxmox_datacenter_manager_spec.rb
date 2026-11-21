@@ -2,12 +2,16 @@
 
 require 'spec_helper'
 require 'puppet/provider/pdm_remote/proxmox_datacenter_manager'
+require 'puppet/type/pdm_remote'
 
 RSpec.describe Puppet::Provider::PdmRemote::ProxmoxDatacenterManager do
   subject(:provider) { described_class.new }
 
   let(:transport) { instance_double('Puppet::Transport::ProxmoxDatacenterManager') }
-  let(:type) { instance_double('Puppet::ResourceApi::Type', namevars: [:id]) }
+  let(:type) do
+    instance_double('Puppet::ResourceApi::Type', namevars: [:id],
+                                                 attributes: Puppet::Type.type(:pdm_remote).type_definition.attributes)
+  end
   let(:context) { instance_double('Puppet::ResourceApi::BaseContext', type: type, notice: nil) }
   let(:store) { PuppetX::ProxmoxDatacenterManager::SecretStore }
 
@@ -80,6 +84,22 @@ RSpec.describe Puppet::Provider::PdmRemote::ProxmoxDatacenterManager do
       expect(body).to include('nodes' => ['pve02'], 'token' => 'secret')
     end
     provider.update(context, 'prod', should)
+  end
+
+  it 'rejects changing the remote type' do
+    expect(transport).not_to receive(:put)
+    expect {
+      provider.set(context, 'prod' => { is: { id: 'prod', type: 'pve', ensure: 'present' },
+                                        should: { id: 'prod', type: 'pbs', ensure: 'present' } })
+    }.to raise_error(Puppet::ResourceError, %r{prod: type cannot be changed from "pve" to "pbs"; recreate the resource instead})
+  end
+
+  it 'never sends create_token during update' do
+    expect(transport).to receive(:put) do |_context, _path, body|
+      expect(body).not_to have_key('create-token')
+    end
+    provider.update(context, 'prod', id: 'prod', type: 'pve', nodes: ['pve01'], authid: 'pdm@pve',
+                                     create_token: 'pdm-admin', ensure: 'present')
   end
 
   it 'requires a token when creating a remote' do

@@ -29,7 +29,7 @@ Puppet::ResourceApi.register_type(
     type: {
       type: "Enum['pve', 'pbs']",
       behaviour: :init_only,
-      desc: 'Remote product type. Cannot be changed after creation.',
+      desc: 'Remote product type. Cannot be changed after creation; recreate the remote instead.',
     },
     nodes: { type: 'Array[String, 1]', desc: 'Cluster node hostnames or IP addresses.' },
     authid: { type: 'String', desc: 'Authentication ID used on the remote.' },

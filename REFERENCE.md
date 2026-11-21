@@ -498,6 +498,10 @@ so it needs no node access; `bind_password` is compared against
 `/etc/proxmox-datacenter-manager/access/ldap-passwords.json` and therefore requires
 the agent to run on the PDM node as root. See the README.
 
+Declaring an attribute that does not apply to the realm's type fails the
+run before anything is sent to PDM. `type` and `username_claim` cannot be
+changed on an existing realm; recreate it instead.
+
 #### Examples
 
 ##### Configure an LDAP realm
@@ -664,7 +668,7 @@ Sync defaults.
 
 Data type: `Enum['ldap', 'ad', 'openid']`
 
-Realm type. Cannot be changed after creation.
+Realm type. Cannot be changed after creation; recreate the realm instead.
 
 ##### `user_attr`
 
@@ -682,7 +686,7 @@ Comma-separated LDAP user object classes.
 
 Data type: `Optional[String]`
 
-OpenID username claim. PDM only accepts it during realm creation.
+OpenID username claim. A realm without one uses "sub". PDM only accepts it during realm creation; recreate the realm to change it.
 
 ##### `verify`
 
@@ -764,7 +768,7 @@ Remote API token secret. Compared against remotes.shadow on the PDM node and re-
 
 Data type: `Enum['pve', 'pbs']`
 
-Remote product type. Cannot be changed after creation.
+Remote product type. Cannot be changed after creation; recreate the remote instead.
 
 ##### `web_url`
 

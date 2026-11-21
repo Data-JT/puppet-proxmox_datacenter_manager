@@ -2,12 +2,16 @@
 
 require 'spec_helper'
 require 'puppet/provider/pdm_realm/proxmox_datacenter_manager'
+require 'puppet/type/pdm_realm'
 
 RSpec.describe Puppet::Provider::PdmRealm::ProxmoxDatacenterManager do
   subject(:provider) { described_class.new }
 
   let(:transport) { instance_double('Puppet::Transport::ProxmoxDatacenterManager') }
-  let(:type) { instance_double('Puppet::ResourceApi::Type', namevars: [:realm]) }
+  let(:type) do
+    instance_double('Puppet::ResourceApi::Type', namevars: [:realm],
+                                                 attributes: Puppet::Type.type(:pdm_realm).type_definition.attributes)
+  end
   let(:context) { instance_double('Puppet::ResourceApi::BaseContext', type: type, notice: nil) }
 
   before(:each) { allow(provider).to receive(:pdm_transport).and_return(transport) }
@@ -148,6 +152,42 @@ RSpec.describe Puppet::Provider::PdmRealm::ProxmoxDatacenterManager do
       expect(oidc).to include(type: 'openid', ensure: 'present', issuer_url: 'https://issuer.example.com')
       expect(oidc).not_to have_key(:comment)
       expect(oidc[:client_key]).to eq('[secret managed]')
+      # PDM logs in with the "sub" claim when a realm stores none.
+      expect(oidc[:username_claim]).to eq('sub')
+      expect(ldap).not_to have_key(:username_claim)
+    end
+  end
+
+  describe '#set' do
+    def change(is, should)
+      { is: is.merge(ensure: 'present'), should: should.merge(ensure: 'present') }
+    end
+
+    # The Resource API checks init_only only under strict=error; this holds
+    # whatever strict says.
+    it 'rejects changing the username_claim of an existing openid realm' do
+      expect(transport).not_to receive(:put)
+      expect {
+        provider.set(context, 'sso' => change({ realm: 'sso', type: 'openid', username_claim: 'sub' },
+                                              { realm: 'sso', type: 'openid', username_claim: 'email' }))
+      }.to raise_error(Puppet::ResourceError,
+                       %r{sso: username_claim cannot be changed from "sub" to "email"; recreate the resource instead})
+    end
+
+    it 'rejects changing the realm type' do
+      expect(transport).not_to receive(:put)
+      expect {
+        provider.set(context, 'corp' => change({ realm: 'corp', type: 'ldap' }, { realm: 'corp', type: 'ad' }))
+      }.to raise_error(Puppet::ResourceError, %r{type cannot be changed from "ldap" to "ad"; recreate the resource instead})
+    end
+
+    it 'rejects an attribute of another realm type before creating anything' do
+      expect(transport).not_to receive(:post)
+      expect {
+        provider.set(context, 'corp' => { is: { realm: 'corp', ensure: 'absent' },
+                                          should: { realm: 'corp', type: 'ad', server1: 'dc1', user_attr: 'uid',
+                                                    ensure: 'present' } })
+      }.to raise_error(Puppet::ResourceError, %r{corp: user_attr does not apply to type ad})
     end
   end
 

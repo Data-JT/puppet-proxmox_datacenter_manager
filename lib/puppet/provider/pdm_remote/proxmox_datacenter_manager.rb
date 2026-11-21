@@ -41,7 +41,8 @@ class Puppet::Provider::PdmRemote::ProxmoxDatacenterManager < Puppet::Provider::
 
   def update(context, name, should)
     context.notice("Updating PDM remote '#{name}'")
-    body = should.reject { |key, _| [:type, :create_token].include?(key) }
+    # create_token only means something when PDM creates the remote.
+    body = without_create_only(context, should).except(:create_token)
     pdm_transport(context).put(context, remote_path(name), update_request_body(context, body))
   end
 
